@@ -40,34 +40,44 @@
 
 
 (defn create-game []
+  (println "create-game")
   (let [post (client/post "http://127.0.0.1:8001/createGame")
         body (:body post)
         result (json/read-str body :key-fn keyword)]
-    (println "create-game")
     (pprint result)
     result))
 
 (defn end-turn []
+  (println "end-turn")
   (let [post (client/post "http://127.0.0.1:8001/endTurn")
         body (:body post)
         result (json/read-str body :key-fn keyword)]
-    (println "end-turn")
     (pprint result)
     result))
 
 (defn play-card [card-id target-id]
-  (let [data (if (nil? target-id) {:cardId   card-id}
+  (println "play-card" card-id target-id)
+  (let [data (if (nil? target-id) {:cardId card-id}
                                   {:cardId   card-id
                                    :targetId target-id})
         post (client/post "http://127.0.0.1:8001/playCard" {:body (json/write-str data)})
         body (:body post)
         result (json/read-str body :key-fn keyword)]
-    (println "play-card" card-id target-id)
+    (pprint result)
+    result
+    ))
+
+(defn attack [attacker-id target-id]
+  (println "attack" attacker-id target-id)
+  (let [post (client/post "http://127.0.0.1:8001/attack" {:body (json/write-str {:attackerId attacker-id :targetId target-id})})
+        body (:body post)
+        result (json/read-str body :key-fn keyword)]
     (pprint result)
     result
     ))
 
 (defn play-minion-card [card-id position target-id]
+  (println "play-minion-card" card-id position target-id)
   (let [data (if (nil? target-id) {:cardId   card-id
                                    :position position}
                                   {:cardId   card-id
@@ -76,7 +86,6 @@
         post (client/post "http://127.0.0.1:8001/playMinionCard" {:body (json/write-str data)})
         body (:body post)
         result (json/read-str body :key-fn keyword)]
-    (println "play-minion-card" card-id position target-id)
     (pprint result)
     result
     ))

@@ -378,12 +378,14 @@
   (let [mzpos (mouse-to-zplane-notrans)
         mzpos-trans {:x (- (:x mzpos) (:x (:translate-plane @graphic-state)))
                      :y (- (:y mzpos) (:y (:translate-plane @graphic-state)))}
-        card (:card (:pressed @graphic-state))]
+        card (:card (:pressed @graphic-state))
+        minion (:minion (:pressed @graphic-state))]
     (cond
+      ;-----------------------------------------------------------------------------------------------------------------
       (:translating (:pressed @graphic-state))
       (swap! graphic-state assoc :translate-plane {:x (+ (:x (:translate-plane @graphic-state)) (- (:x mzpos) (:x (:org-mouse (:pressed @graphic-state)))))
                                                    :y (+ (:y (:translate-plane @graphic-state)) (- (:y mzpos) (:y (:org-mouse (:pressed @graphic-state)))))})
-
+      ;-----------------------------------------------------------------------------------------------------------------
       (= "MINION" (:type card))
       (let [minion-count-plus (inc (count (:activeMinions (get-player-map))))
             minion-position (->> (range minion-count-plus)
@@ -391,15 +393,23 @@
                                  (first))]
         (when-not (nil? minion-position)
           (swap! gamestate (fn [_] (game/play-minion-card (:id card) minion-position nil)))))
-
+      ;-----------------------------------------------------------------------------------------------------------------
       (and (= "SPELL" (:type card)) (:isTargeting card))
-      (do
-        (let [target (or
-                       (get-minion-target mzpos-trans (get-player-map) inside-friendly?)
-                       (get-minion-target mzpos-trans (get-enemy-map) inside-enemy?))]
-          (if-not (nil? target)
-            (swap! gamestate (fn [_] (game/play-card (:id card) (:id target)))))))))
-  (swap! graphic-state assoc :pressed nil))
+      (let [target (or
+                     (get-minion-target mzpos-trans (get-player-map) inside-friendly?)
+                     (get-minion-target mzpos-trans (get-enemy-map) inside-enemy?))]
+        (if-not (nil? target)
+          (swap! gamestate (fn [_] (game/play-card (:id card) (:id target))))))
+      ;-----------------------------------------------------------------------------------------------------------------
+      (:canAttack minion)
+      (let [target (or
+                     (get-minion-target mzpos-trans (get-player-map) inside-friendly?)
+                     (get-minion-target mzpos-trans (get-enemy-map) inside-enemy?))]
+        (if-not (nil? target)
+          (swap! gamestate (fn [_] (game/attack (:id minion) (:id target))))))
+      ;-----------------------------------------------------------------------------------------------------------------
+      )
+    (swap! graphic-state assoc :pressed nil)))
 
 (defn mouse-pressed []
   (let [mzpos (mouse-to-zplane-notrans)
@@ -412,13 +422,23 @@
       (and (q/key-pressed?) (:control (q/key-modifiers)))
       (swap! graphic-state assoc :pressed {:translating     true
                                            :org-mouse       mzpos
-                                           :org-mouse-trans mzpos-trans})
-      :else
+                                           :org-mouse-trans mzpos-trans}))
+    (when (nil? (:pressed @graphic-state))
       (let [player (get-player-map)
-            hand (:hand player)]
+            hand (:hand player)
+            handcount (count hand)]
         (doseq [[card idx] (map vector hand (iterate inc 0))]
-          (when (inside-card? mzpos-trans idx (count hand))
+          (when (inside-card? mzpos-trans idx handcount)
             (swap! graphic-state assoc :pressed {:card            card
+                                                 :org-mouse       mzpos
+                                                 :org-mouse-trans mzpos-trans})))))
+    (when (nil? (:pressed @graphic-state))
+      (let [player (get-player-map)
+            minions (:activeMinions player)
+            minioncount (count minions)]
+        (doseq [[minion idx] (map vector minions (iterate inc 0))]
+          (when (inside-friendly? mzpos-trans idx minioncount)
+            (swap! graphic-state assoc :pressed {:minion          minion
                                                  :org-mouse       mzpos
                                                  :org-mouse-trans mzpos-trans})))))))
 
@@ -483,7 +503,7 @@
                         (q/rotate-z -0.1)
                         (q/text (:name card) 0 0))))
 
-(defn draw-minion [minion targeted]
+(defn draw-minion [mzpos minion targeted]
   (let [width (:card-width graphic-constants)
         height (:card-height graphic-constants)
         ph (- height 170)
@@ -498,6 +518,11 @@
     (q/no-stroke)
     (q/no-fill)
 
+    (when (= (:id minion) (:id (:minion (:pressed @graphic-state))))
+      (let [morgpos (:org-mouse-trans (:pressed @graphic-state))]
+        (q/translate (- (:x mzpos) (:x morgpos))
+                     (- (:y mzpos) (:y morgpos))
+                     10)))
     ; Portrait
     (with-shape []
                 (q/texture (get-portrait (:name minion)))
@@ -530,31 +555,44 @@
 
     (when targeted
       (q/translate 0 0 2)
-      (q/fill 255 0 0 128)
+      (if (and (:minion (:pressed @graphic-state))
+               (not (:canAttack (:minion (:pressed @graphic-state)))))
+        (q/fill 255 0 0 128)
+        (q/fill 0 255 0 128))
       (let [w2 (+ width 5)
             h2 (+ height 5)]
         (q/rect (- w2) (- h2) (* 2 w2) (* 2 h2) 30)))
     ))
 
+(defn mouse-attackable-minion? [mzpos idx minion-count test-function minion]
+  (or
+    (let [pressed (:card (:pressed @graphic-state))]
+      (and
+        pressed
+        (:isTargeting pressed)
+        (= "SPELL" (:type pressed))
+        (test/vector-contains? (:validTargetIds pressed) (:id minion))
+        (test-function mzpos idx minion-count)))
+    (let [pressed (:minion (:pressed @graphic-state))]
+      (and
+        pressed
+        (test/vector-contains? (:validAttackIds pressed) (:id minion))
+        (test-function mzpos idx minion-count)))))
+
+
+
 (defn draw-friendly-minion [mzpos minion idx minion-count card-drop-pos]
   (let [translation (cond (nil? card-drop-pos) [(get-entity-translation-x idx minion-count) 0]
                           (>= idx card-drop-pos) [(get-entity-translation-x (inc idx) (inc minion-count)) 0]
-                          :else [(get-entity-translation-x idx (inc minion-count)) 0])
-        clicked-card (:card (:pressed @graphic-state))]
-    (q/with-translation translation (draw-minion minion (and
-                                                          (:isTargeting clicked-card)
-                                                          (= "SPELL" (:type clicked-card))
-                                                          (test/vector-contains? (:validTargetIds clicked-card) (:id minion))
-                                                          (inside-friendly? mzpos idx minion-count))))))
+                          :else [(get-entity-translation-x idx (inc minion-count)) 0])]
+    (q/with-translation translation
+                        (draw-minion mzpos minion (mouse-attackable-minion? mzpos idx minion-count inside-friendly? minion)))))
+
+
 
 (defn draw-enemy-minion [mzpos minion idx minion-count]
   (q/with-translation [(get-entity-translation-x idx minion-count) 0]
-                      (let [clicked-card (:card (:pressed @graphic-state))]
-                        (draw-minion minion (and
-                                              (:isTargeting clicked-card)
-                                              (= "SPELL" (:type clicked-card))
-                                              (test/vector-contains? (:validTargetIds clicked-card) (:id minion))
-                                              (inside-enemy? mzpos idx minion-count))))))
+                      (draw-minion mzpos minion (mouse-attackable-minion? mzpos idx minion-count inside-enemy? minion))))
 
 (defn draw-friendly-minions [mzpos minions]
   (q/with-translation [0 (:friendly-y graphic-constants)]
