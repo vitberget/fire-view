@@ -1,6 +1,8 @@
 (ns fire-view.core
+  (:use [clojure.pprint :only [pprint]])
   (:require [quil.core :as q :include-macros true]
             [fire-view.math :as m]
+            [fire-view.test :as test]
             [fire-view.gamestuff :as game]))
 
 (defmacro with-shape [& body]
@@ -269,8 +271,13 @@
                     (get-entity-translation-x idx minion-count) (:friendly-y graphic-constants)
                     (+ (:card-spacing graphic-constants) (:card-width graphic-constants)) (:card-height graphic-constants)))
 
+(defn inside-enemy? [mzpos idx minion-count]
+  (m/inside-entity? (:x mzpos) (:y mzpos)
+                    (get-entity-translation-x idx minion-count) (:enemy-y graphic-constants)
+                    (+ (:card-spacing graphic-constants) (:card-width graphic-constants)) (:card-height graphic-constants)))
+
 (defn mouse-released []
-  (let [cardid (:card-id (:clicked-start-data @graphic-state))]
+  (let [cardid (:id (:card (:clicked-start-data @graphic-state)))]
     (when cardid
       (let [minion-count-plus (inc (count (:activeMinions (get-player-map @gamestate (:playerInTurn @gamestate)))))
             mzpos (mouse-to-zplane)
@@ -293,7 +300,7 @@
                   hand (:hand player)]
               (doseq [[card idx] (map vector hand (iterate inc 0))]
                 (when (inside-card? mzpos idx (count hand))
-                  (swap! graphic-state assoc :clicked-start-data {:card-id            (:id card)
+                  (swap! graphic-state assoc :clicked-start-data {:card               card
                                                                   :org-mouse-position mzpos})))))))
 
 
@@ -301,7 +308,7 @@
 (defn draw-card [mzpos card pos hand-size]
   (let [width (:card-width graphic-constants)
         height (:card-height graphic-constants)
-        clicked-card-id (:card-id (:clicked-start-data @graphic-state))
+        clicked-card-id (:id (:card (:clicked-start-data @graphic-state)))
         clicked (= (:id card) clicked-card-id)
         ph (- height 170)
         pw (- width 65)
@@ -357,7 +364,7 @@
                         (q/rotate-z -0.1)
                         (q/text (:name card) 0 0))))
 
-(defn draw-minion [minion]
+(defn draw-minion [minion targeted]
   (let [width (:card-width graphic-constants)
         height (:card-height graphic-constants)
         ph (- height 170)
@@ -395,34 +402,52 @@
                 (q/vertex (- width) (- height) 87 3))
 
     ; Name
-    (q/fill 0 0 0)
-    (q/text-size 40)
-    (q/text-align :center)
-    (q/translate 0 38)
-    (q/rotate-z -0.1)
-    (q/text (:name minion) 0 0)))
+    (q/with-translation [0 38]
+                        (q/fill 0 0 0)
+                        (q/text-size 40)
+                        (q/text-align :center)
+                        (q/rotate-z -0.1)
+                        (q/text (:name minion) 0 0))
 
-(defn draw-friendly-minion [minion idx minions-count card-drop-pos]
-  (let [translation (cond (nil? card-drop-pos) [(get-entity-translation-x idx minions-count) 0]
-                          (>= idx card-drop-pos) [(get-entity-translation-x (inc idx) (inc minions-count)) 0]
-                          :else [(get-entity-translation-x idx (inc minions-count)) 0])]
-    (q/with-translation translation (draw-minion minion))))
+    (when targeted
+      (q/translate 0 0 2)
+      (q/fill 255 0 0 128)
+      (let [w2 (+ width 5)
+            h2 (+ height 5)]
+        (q/rect (- w2) (- h2) (* 2 w2) (* 2 h2) 30)))
+    ))
 
-(defn draw-enemy-minion [minion idx minion-count]
+(defn draw-friendly-minion [mzpos minion idx minion-count card-drop-pos]
+  (let [translation (cond (nil? card-drop-pos) [(get-entity-translation-x idx minion-count) 0]
+                          (>= idx card-drop-pos) [(get-entity-translation-x (inc idx) (inc minion-count)) 0]
+                          :else [(get-entity-translation-x idx (inc minion-count)) 0])
+        clicked-card (:card (:clicked-start-data @graphic-state))]
+    (q/with-translation translation (draw-minion minion (and
+                                                          (:isTargeting clicked-card)
+                                                          (= "SPELL" (:type clicked-card))
+                                                          (test/vector-contains? (:validTargetIds clicked-card) (:id minion))
+                                                          (inside-friendly? mzpos idx minion-count))))))
+
+(defn draw-enemy-minion [mzpos minion idx minion-count]
   (q/with-translation [(get-entity-translation-x idx minion-count) 0]
-                      (draw-minion minion)))
+                      (let [clicked-card (:card (:clicked-start-data @graphic-state))]
+                      (draw-minion minion (and
+                                            (:isTargeting clicked-card)
+                                            (= "SPELL" (:type clicked-card))
+                                            (test/vector-contains? (:validTargetIds clicked-card) (:id minion))
+                                            (inside-enemy? mzpos idx minion-count))))))
 
 (defn draw-friendly-minions [mzpos minions]
   (q/with-translation [0 (:friendly-y graphic-constants)]
                       (let [minion-count (count minions)
                             minion-count-plus (inc minion-count)
-                            card-pos (when (:card-id (:clicked-start-data @graphic-state))
+                            card-pos (when (= "MINION" (:type (:card (:clicked-start-data @graphic-state))))
                                        (->> (range minion-count-plus)
                                             (filter (fn [pos] (when (inside-friendly? mzpos pos minion-count-plus)
                                                                 pos)))
                                             (first)))]
                         (doseq [[minion idx] (map vector minions (iterate inc 0))]
-                          (draw-friendly-minion minion idx minion-count card-pos))
+                          (draw-friendly-minion mzpos minion idx minion-count card-pos))
                         (when card-pos
                           (let [width (:card-width graphic-constants)
                                 height (:card-height graphic-constants)]
@@ -434,17 +459,18 @@
   (q/with-translation [0 (:enemy-y graphic-constants) -2]
                       (let [minion-count (count minions)]
                         (doseq [[minion idx] (map vector minions (iterate inc 0))]
-                          (draw-enemy-minion minion idx minion-count)))))
+                          (draw-enemy-minion mzpos minion idx minion-count)))))
 
 (defn draw-hand [mzpos hand]
   (q/with-translation [0 (:hand-y graphic-constants) 1]
-                      (let [hand-size (count hand)]
+                      (let [hand-size (count hand)
+                            clicked-id (:id (:card (:clicked-start-data @graphic-state)))]
                         (doseq [[card idx] (map vector hand (iterate inc 0))]
-                          (when-not (= (:card-id (:clicked-start-data @graphic-state)) (:id card))
-                            (draw-card mzpos card idx hand-size)))
+                          (when-not (= clicked-id (:id card)))
+                          (draw-card mzpos card idx hand-size))
                         ; TODO Better rendering of card!!! So no fucking need to cheat
                         (doseq [[card idx] (map vector hand (iterate inc 0))]
-                          (when (= (:card-id (:clicked-start-data @graphic-state)) (:id card))
+                          (when (= clicked-id (:id card))
                             (draw-card mzpos card idx hand-size))))))
 
 
@@ -454,8 +480,9 @@
                       (if (inside-endbutton? mzpos)
                         (q/fill 56 255 56)
                         (q/fill 0 128 0))
-                      (q/rect -100 -50 200 100 50))
-  )
+                      (let [w (:w (:end-button-size graphic-constants))
+                            h (:h (:end-button-size graphic-constants))]
+                        (q/rect (- w) (- h) (* w 2) (* h 2) 30))))
 
 (defn draw-board [mzpos]
   (draw-endbutton mzpos))
