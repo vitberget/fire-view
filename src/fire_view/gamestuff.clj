@@ -55,6 +55,18 @@
     (pprint result)
     result))
 
+(defn play-card [card-id target-id]
+  (let [data (if (nil? target-id) {:cardId   card-id}
+                                  {:cardId   card-id
+                                   :targetId target-id})
+        post (client/post "http://127.0.0.1:8001/playCard" {:body (json/write-str data)})
+        body (:body post)
+        result (json/read-str body :key-fn keyword)]
+    (println "play-card" card-id target-id)
+    (pprint result)
+    result
+    ))
+
 (defn play-minion-card [card-id position target-id]
   (let [data (if (nil? target-id) {:cardId   card-id
                                    :position position}

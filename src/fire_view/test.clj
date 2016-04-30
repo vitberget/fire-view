@@ -1,5 +1,7 @@
 (ns fire-view.test
-  (:use [clojure.test :only (is run-tests function?)]))
+  (:use [clojure.test :only (is run-tests function?)]
+        [clojure.pprint :only [pprint]]))
+
 
 (defmacro is= [actual expected]
   `(let [actual# ~actual
@@ -27,6 +29,9 @@
             (is (vector-contains? ["a" "b" "c"] "a")))}
   vector-contains? [haystack needle]
   (not (nil? (index-of haystack needle))))
+
+
+
 
 
 

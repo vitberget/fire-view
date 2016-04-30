@@ -89,6 +89,82 @@
                                                              :states           []
                                                              :type             "Minion"
                                                              :validAttackIds   #{"h2" "m-i3"}}
+                                                            {:attack           1
+                                                             :buffDescriptions []
+                                                             :canAttack        true
+                                                             :description      nil
+                                                             :health           1
+                                                             :id               "m-i2"
+                                                             :manaCost         1
+                                                             :maxHealth        1
+                                                             :name             "Imp"
+                                                             :originalAttack   1
+                                                             :originalHealth   1
+                                                             :owner            "p1"
+                                                             :position         0
+                                                             :race             "demon"
+                                                             :class            nil
+                                                             :rarity           "common"
+                                                             :states           []
+                                                             :type             "Minion"
+                                                             :validAttackIds   #{"h2" "m-i3"}}
+                                                            {:attack           1
+                                                             :buffDescriptions []
+                                                             :canAttack        true
+                                                             :description      nil
+                                                             :health           1
+                                                             :id               "m-i2"
+                                                             :manaCost         1
+                                                             :maxHealth        1
+                                                             :name             "Imp"
+                                                             :originalAttack   1
+                                                             :originalHealth   1
+                                                             :owner            "p1"
+                                                             :position         0
+                                                             :race             "demon"
+                                                             :class            nil
+                                                             :rarity           "common"
+                                                             :states           []
+                                                             :type             "Minion"
+                                                             :validAttackIds   #{"h2" "m-i3"}}
+                                                            {:attack           1
+                                                             :buffDescriptions []
+                                                             :canAttack        true
+                                                             :description      nil
+                                                             :health           1
+                                                             :id               "m-i2"
+                                                             :manaCost         1
+                                                             :maxHealth        1
+                                                             :name             "Imp"
+                                                             :originalAttack   1
+                                                             :originalHealth   1
+                                                             :owner            "p1"
+                                                             :position         0
+                                                             :race             "demon"
+                                                             :class            nil
+                                                             :rarity           "common"
+                                                             :states           []
+                                                             :type             "Minion"
+                                                             :validAttackIds   #{"h2" "m-i3"}}
+                                                            {:attack           1
+                                                             :buffDescriptions []
+                                                             :canAttack        true
+                                                             :description      nil
+                                                             :health           1
+                                                             :id               "m-i2"
+                                                             :manaCost         1
+                                                             :maxHealth        1
+                                                             :name             "Imp"
+                                                             :originalAttack   1
+                                                             :originalHealth   1
+                                                             :owner            "p1"
+                                                             :position         0
+                                                             :race             "demon"
+                                                             :class            nil
+                                                             :rarity           "common"
+                                                             :states           []
+                                                             :type             "Minion"
+                                                             :validAttackIds   #{"h2" "m-i3"}}
                                                             ]
                                             :hand          [
                                                             {:id               "c-i1"
@@ -186,10 +262,10 @@
                                                              :validTargetIds   []}]}]}
                      ))
 
-(def graphic-state (atom {:translate-plane    {:x 0 :y 0}
-                          :eye                {:x 0 :y 0 :z 1500}
-                          :fov                (/ m/pi 3)
-                          :clicked-start-data {}}))
+(def graphic-state (atom {:translate-plane {:x 0 :y 0}
+                          :eye             {:x 0 :y 0 :z 1850}
+                          :fov             (/ m/pi 3)
+                          :pressed         nil}))
 
 (def ^:const graphic-constants {:card-width           170
                                 :card-height          256
@@ -201,7 +277,7 @@
                                 :friendly-y           0
                                 :enemy-y              -600
 
-                                :end-button-translate {:x 1000 :y 0}
+                                :end-button-translate {:x 1600 :y 0}
                                 :end-button-size      {:w 100 :h 50}})
 (def images (atom {}))
 
@@ -214,14 +290,14 @@
 (defn get-portrait [portaitname]
   (get-image (str "portrait/" portaitname ".png")))
 
-(defn get-player-map [state player-id]
-  (->> (:players state)
-       (filter (fn [player] (= (:id player) player-id)))
+(defn get-player-map []
+  (->> (:players @gamestate)
+       (filter (fn [player] (= (:id player) (:playerInTurn @gamestate))))
        (first)))
 
-(defn get-enemy-map [state player-id]
-  (->> (:players state)
-       (filter (fn [player] (not= (:id player) player-id)))
+(defn get-enemy-map []
+  (->> (:players @gamestate)
+       (filter (fn [player] (not= (:id player) (:playerInTurn @gamestate))))
        (first)))
 
 (defn
@@ -230,20 +306,33 @@
   (let [factor 1000
         half_width (/ (q/width) 2)
         half_height (/ (q/height) 2)
-        aspect (- (q/screen-x factor 0) half_width)]
-    {:x (* (/ (- (q/mouse-x) half_width) aspect) factor)
-     :y (* (/ (- (q/mouse-y) half_height) aspect) factor)}))
+        aspect (- (q/screen-x factor 0) half_width)
+        result {:x (* (/ (- (q/mouse-x) half_width) aspect) factor)
+                :y (* (/ (- (q/mouse-y) half_height) aspect) factor)}]
+    ;(println result)
+    result))
+
+(defn innercam []
+  (let [eye (:eye @graphic-state)]
+    (q/camera (:x eye) (:y eye) (:z eye)
+              0 0 0
+              0 1 0)))
+
+(defn
+  ^{:doc "Only works correctly when flat"}
+  mouse-to-zplane-notrans []
+  (q/push-matrix)
+  (innercam)
+  (let [mouse (mouse-to-zplane)]
+    (q/pop-matrix)
+    mouse))
+
 
 (defn camera []
   (q/perspective (:fov @graphic-state)
                  (/ (q/width) (q/height))
                  60 5000)
-  (let [tx (:x (:translate-plane @graphic-state))
-        ty (:y (:translate-plane @graphic-state))
-        eye (:eye @graphic-state)]
-    (q/camera (+ (:x eye) tx) (+ (:y eye) ty) (:z eye)
-              tx ty 0
-              0 1 0)))
+  (innercam))
 
 (defn get-entity-translation-x [pos size]
   (let [card-width (:card-width graphic-constants)
@@ -276,39 +365,69 @@
                     (get-entity-translation-x idx minion-count) (:enemy-y graphic-constants)
                     (+ (:card-spacing graphic-constants) (:card-width graphic-constants)) (:card-height graphic-constants)))
 
+(defn get-minion-target [mzpos playermap testfunction]
+  (let [minions (:activeMinions playermap)
+        minioncount (count minions)
+        target (->> (map vector minions (iterate inc 0))
+                    (filter (fn [item] (testfunction mzpos (last item) minioncount)))
+                    (first)
+                    (first))]
+    target))
+
 (defn mouse-released []
-  (let [cardid (:id (:card (:clicked-start-data @graphic-state)))]
-    (when cardid
-      (let [minion-count-plus (inc (count (:activeMinions (get-player-map @gamestate (:playerInTurn @gamestate)))))
-            mzpos (mouse-to-zplane)
-            position (->> (range minion-count-plus)
-                          (filter (fn [pos] (when (inside-friendly? mzpos pos minion-count-plus)
-                                              pos)))
-                          (first))]
-        (when-not (nil? position)
-          (swap! gamestate (fn [_] (game/play-minion-card cardid position nil)))))))
-  (swap! graphic-state assoc :clicked-start-data {}))
+  (let [mzpos (mouse-to-zplane-notrans)
+        mzpos-trans {:x (- (:x mzpos) (:x (:translate-plane @graphic-state)))
+                     :y (- (:y mzpos) (:y (:translate-plane @graphic-state)))}
+        card (:card (:pressed @graphic-state))]
+    (cond
+      (:translating (:pressed @graphic-state))
+      (swap! graphic-state assoc :translate-plane {:x (+ (:x (:translate-plane @graphic-state)) (- (:x mzpos) (:x (:org-mouse (:pressed @graphic-state)))))
+                                                   :y (+ (:y (:translate-plane @graphic-state)) (- (:y mzpos) (:y (:org-mouse (:pressed @graphic-state)))))})
+
+      (= "MINION" (:type card))
+      (let [minion-count-plus (inc (count (:activeMinions (get-player-map))))
+            minion-position (->> (range minion-count-plus)
+                                 (filter (fn [pos] (inside-friendly? mzpos-trans pos minion-count-plus)))
+                                 (first))]
+        (when-not (nil? minion-position)
+          (swap! gamestate (fn [_] (game/play-minion-card (:id card) minion-position nil)))))
+
+      (and (= "SPELL" (:type card)) (:isTargeting card))
+      (do
+        (let [target (or
+                       (get-minion-target mzpos-trans (get-player-map) inside-friendly?)
+                       (get-minion-target mzpos-trans (get-enemy-map) inside-enemy?))]
+          (if-not (nil? target)
+            (swap! gamestate (fn [_] (game/play-card (:id card) (:id target)))))))))
+  (swap! graphic-state assoc :pressed nil))
 
 (defn mouse-pressed []
-  (let [mzpos (mouse-to-zplane)]
+  (let [mzpos (mouse-to-zplane-notrans)
+        mzpos-trans {:x (- (:x mzpos) (:x (:translate-plane @graphic-state)))
+                     :y (- (:y mzpos) (:y (:translate-plane @graphic-state)))}]
     (cond
-      (inside-endbutton? mzpos) (swap! gamestate (fn [_] (game/end-turn)))
-      (q/key-pressed?) (swap! graphic-state assoc :clicked-start-data {:key                true
-                                                                       :org-mouse-position mzpos
-                                                                       :org-translate      (:translate-plane @graphic-state)})
-      :else (let [player (get-player-map @gamestate (:playerInTurn @gamestate))
-                  hand (:hand player)]
-              (doseq [[card idx] (map vector hand (iterate inc 0))]
-                (when (inside-card? mzpos idx (count hand))
-                  (swap! graphic-state assoc :clicked-start-data {:card               card
-                                                                  :org-mouse-position mzpos})))))))
+      (inside-endbutton? mzpos-trans)
+      (swap! gamestate (fn [_] (game/end-turn)))
+
+      (and (q/key-pressed?) (:control (q/key-modifiers)))
+      (swap! graphic-state assoc :pressed {:translating     true
+                                           :org-mouse       mzpos
+                                           :org-mouse-trans mzpos-trans})
+      :else
+      (let [player (get-player-map)
+            hand (:hand player)]
+        (doseq [[card idx] (map vector hand (iterate inc 0))]
+          (when (inside-card? mzpos-trans idx (count hand))
+            (swap! graphic-state assoc :pressed {:card            card
+                                                 :org-mouse       mzpos
+                                                 :org-mouse-trans mzpos-trans})))))))
 
 
 
 (defn draw-card [mzpos card pos hand-size]
   (let [width (:card-width graphic-constants)
         height (:card-height graphic-constants)
-        clicked-card-id (:id (:card (:clicked-start-data @graphic-state)))
+        clicked-card-id (:id (:card (:pressed @graphic-state)))
         clicked (= (:id card) clicked-card-id)
         ph (- height 170)
         pw (- width 65)
@@ -325,7 +444,7 @@
                         (q/no-fill)
 
                         (when clicked
-                          (let [morgpos (:org-mouse-position (:clicked-start-data @graphic-state))]
+                          (let [morgpos (:org-mouse-trans (:pressed @graphic-state))]
                             (q/translate (- (:x mzpos) (:x morgpos))
                                          (- (:y mzpos) (:y morgpos))
                                          10)))
@@ -421,7 +540,7 @@
   (let [translation (cond (nil? card-drop-pos) [(get-entity-translation-x idx minion-count) 0]
                           (>= idx card-drop-pos) [(get-entity-translation-x (inc idx) (inc minion-count)) 0]
                           :else [(get-entity-translation-x idx (inc minion-count)) 0])
-        clicked-card (:card (:clicked-start-data @graphic-state))]
+        clicked-card (:card (:pressed @graphic-state))]
     (q/with-translation translation (draw-minion minion (and
                                                           (:isTargeting clicked-card)
                                                           (= "SPELL" (:type clicked-card))
@@ -430,21 +549,20 @@
 
 (defn draw-enemy-minion [mzpos minion idx minion-count]
   (q/with-translation [(get-entity-translation-x idx minion-count) 0]
-                      (let [clicked-card (:card (:clicked-start-data @graphic-state))]
-                      (draw-minion minion (and
-                                            (:isTargeting clicked-card)
-                                            (= "SPELL" (:type clicked-card))
-                                            (test/vector-contains? (:validTargetIds clicked-card) (:id minion))
-                                            (inside-enemy? mzpos idx minion-count))))))
+                      (let [clicked-card (:card (:pressed @graphic-state))]
+                        (draw-minion minion (and
+                                              (:isTargeting clicked-card)
+                                              (= "SPELL" (:type clicked-card))
+                                              (test/vector-contains? (:validTargetIds clicked-card) (:id minion))
+                                              (inside-enemy? mzpos idx minion-count))))))
 
 (defn draw-friendly-minions [mzpos minions]
   (q/with-translation [0 (:friendly-y graphic-constants)]
                       (let [minion-count (count minions)
                             minion-count-plus (inc minion-count)
-                            card-pos (when (= "MINION" (:type (:card (:clicked-start-data @graphic-state))))
+                            card-pos (when (= "MINION" (:type (:card (:pressed @graphic-state))))
                                        (->> (range minion-count-plus)
-                                            (filter (fn [pos] (when (inside-friendly? mzpos pos minion-count-plus)
-                                                                pos)))
+                                            (filter (fn [pos] (inside-friendly? mzpos pos minion-count-plus)))
                                             (first)))]
                         (doseq [[minion idx] (map vector minions (iterate inc 0))]
                           (draw-friendly-minion mzpos minion idx minion-count card-pos))
@@ -464,7 +582,7 @@
 (defn draw-hand [mzpos hand]
   (q/with-translation [0 (:hand-y graphic-constants) 1]
                       (let [hand-size (count hand)
-                            clicked-id (:id (:card (:clicked-start-data @graphic-state)))]
+                            clicked-id (:id (:card (:pressed @graphic-state)))]
                         (doseq [[card idx] (map vector hand (iterate inc 0))]
                           (when-not (= clicked-id (:id card)))
                           (draw-card mzpos card idx hand-size))
@@ -482,7 +600,12 @@
                         (q/fill 0 128 0))
                       (let [w (:w (:end-button-size graphic-constants))
                             h (:h (:end-button-size graphic-constants))]
-                        (q/rect (- w) (- h) (* w 2) (* h 2) 30))))
+                        (q/rect (- w) (- h) (* w 2) (* h 2) 30))
+                      (q/fill 0 0 0)
+                      (q/text-size 70)
+                      (q/translate 0 30)
+                      (q/text-align :center)
+                      (q/text "End" 0 0)))
 
 (defn draw-board [mzpos]
   (draw-endbutton mzpos))
@@ -491,15 +614,25 @@
   (camera)
   (q/background 70 128 185)
   (let [mzpos (mouse-to-zplane)
-        player (get-player-map @gamestate (:playerInTurn @gamestate))]
-    (draw-board mzpos)
-    (draw-enemy-minions mzpos (:activeMinions (get-enemy-map @gamestate (:playerInTurn @gamestate))))
-    (draw-friendly-minions mzpos (:activeMinions player))
-    (draw-hand mzpos (:hand player))))
+        tx (:x (:translate-plane @graphic-state))
+        ty (:y (:translate-plane @graphic-state))
+        mzpos-trans {:x (- (:x mzpos) tx)
+                     :y (- (:y mzpos) ty)}
+        player (get-player-map)]
+    (q/translate tx ty)
+    (when
+      (:translating (:pressed @graphic-state))
+      (q/translate (- (:x mzpos) (:x (:org-mouse (:pressed @graphic-state))))
+                   (- (:y mzpos) (:y (:org-mouse (:pressed @graphic-state))))))
+    (draw-board mzpos-trans)
+    (draw-enemy-minions mzpos-trans (:activeMinions (get-enemy-map)))
+    (draw-friendly-minions mzpos-trans (:activeMinions player))
+    (draw-hand mzpos-trans (:hand player))))
 
 (defn setup []
   (q/frame-rate 60)
-  (swap! gamestate (fn [_] (game/create-game))))
+  (swap! gamestate (fn [_] (game/create-game)))
+  )
 
 (q/defsketch firestone-view
              :size :fullscreen
