@@ -89,3 +89,255 @@
     (pprint result)
     result
     ))
+
+(def example-gamestate {:id                 "todo"
+                        :playerInTurn       "p1"
+                        :intermediateStates []
+                        :players            [{:id            "p1"
+                                              :deckSize      1
+                                              :hero          {:id        "h1"
+                                                              :name      "Jaina"
+                                                              :health    30
+                                                              :maxHealth 30
+                                                              :mana      10
+                                                              :maxMana   10
+                                                              :armor     0
+                                                              :heropower {:name             "Fireblast"
+                                                                          :manaCost         2
+                                                                          :originalManaCost 2
+                                                                          :canUse           true
+                                                                          :isTargeting      true
+                                                                          :validTargetIds   ["h1"
+                                                                                             "h2"
+                                                                                             "m-i2"
+                                                                                             "m-i3"]}}
+                                              :activeMinions [
+                                                              {:attack           1
+                                                               :buffDescriptions []
+                                                               :canAttack        true
+                                                               :description      nil
+                                                               :health           1
+                                                               :id               "m-i2"
+                                                               :manaCost         1
+                                                               :maxHealth        1
+                                                               :name             "Imp"
+                                                               :originalAttack   1
+                                                               :originalHealth   1
+                                                               :owner            "p1"
+                                                               :position         0
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :rarity           "common"
+                                                               :states           []
+                                                               :type             "Minion"
+                                                               :validAttackIds   #{"h2" "m-i3"}}
+                                                              {:attack           1
+                                                               :buffDescriptions []
+                                                               :canAttack        true
+                                                               :description      nil
+                                                               :health           1
+                                                               :id               "m-i2"
+                                                               :manaCost         1
+                                                               :maxHealth        1
+                                                               :name             "Imp"
+                                                               :originalAttack   1
+                                                               :originalHealth   1
+                                                               :owner            "p1"
+                                                               :position         0
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :rarity           "common"
+                                                               :states           []
+                                                               :type             "Minion"
+                                                               :validAttackIds   #{"h2" "m-i3"}}
+                                                              {:attack           1
+                                                               :buffDescriptions []
+                                                               :canAttack        true
+                                                               :description      nil
+                                                               :health           1
+                                                               :id               "m-i2"
+                                                               :manaCost         1
+                                                               :maxHealth        1
+                                                               :name             "Imp"
+                                                               :originalAttack   1
+                                                               :originalHealth   1
+                                                               :owner            "p1"
+                                                               :position         0
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :rarity           "common"
+                                                               :states           []
+                                                               :type             "Minion"
+                                                               :validAttackIds   #{"h2" "m-i3"}}
+                                                              {:attack           1
+                                                               :buffDescriptions []
+                                                               :canAttack        true
+                                                               :description      nil
+                                                               :health           1
+                                                               :id               "m-i2"
+                                                               :manaCost         1
+                                                               :maxHealth        1
+                                                               :name             "Imp"
+                                                               :originalAttack   1
+                                                               :originalHealth   1
+                                                               :owner            "p1"
+                                                               :position         0
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :rarity           "common"
+                                                               :states           []
+                                                               :type             "Minion"
+                                                               :validAttackIds   #{"h2" "m-i3"}}
+                                                              {:attack           1
+                                                               :buffDescriptions []
+                                                               :canAttack        true
+                                                               :description      nil
+                                                               :health           1
+                                                               :id               "m-i2"
+                                                               :manaCost         1
+                                                               :maxHealth        1
+                                                               :name             "Imp"
+                                                               :originalAttack   1
+                                                               :originalHealth   1
+                                                               :owner            "p1"
+                                                               :position         0
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :rarity           "common"
+                                                               :states           []
+                                                               :type             "Minion"
+                                                               :validAttackIds   #{"h2" "m-i3"}}
+                                                              {:attack           1
+                                                               :buffDescriptions []
+                                                               :canAttack        true
+                                                               :description      nil
+                                                               :health           1
+                                                               :id               "m-i2"
+                                                               :manaCost         1
+                                                               :maxHealth        1
+                                                               :name             "Imp"
+                                                               :originalAttack   1
+                                                               :originalHealth   1
+                                                               :owner            "p1"
+                                                               :position         0
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :rarity           "common"
+                                                               :states           []
+                                                               :type             "Minion"
+                                                               :validAttackIds   #{"h2" "m-i3"}}
+                                                              {:attack           1
+                                                               :buffDescriptions []
+                                                               :canAttack        true
+                                                               :description      nil
+                                                               :health           1
+                                                               :id               "m-i2"
+                                                               :manaCost         1
+                                                               :maxHealth        1
+                                                               :name             "Imp"
+                                                               :originalAttack   1
+                                                               :originalHealth   1
+                                                               :owner            "p1"
+                                                               :position         0
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :rarity           "common"
+                                                               :states           []
+                                                               :type             "Minion"
+                                                               :validAttackIds   #{"h2" "m-i3"}}
+                                                              ]
+                                              :hand          [
+                                                              {:id               "c-i1"
+                                                               :name             "Imp"
+                                                               :state            "in-hand"
+                                                               :description      ""
+                                                               :index            0
+                                                               :health           1
+                                                               :attack           1
+                                                               :originalHealth   1
+                                                               :originalAttack   1
+                                                               :manaCost         1
+                                                               :originalManaCost 1
+                                                               :combo            false
+                                                               :type             "MINION"
+                                                               :race             "demon"
+                                                               :isTargeting      false
+                                                               :validTargetIds   []
+                                                               :playable         true
+                                                               :rarity           "common"
+                                                               :class            nil}
+                                                              {:id               "c-f1"
+                                                               :index            0
+                                                               :name             "Fireball"
+                                                               :description      "Deal 6 damage."
+                                                               :health           nil
+                                                               :attack           nil
+                                                               :manaCost         4
+                                                               :originalManaCost 4
+                                                               :combo            false
+                                                               :originalHealth   nil
+                                                               :originalAttack   nil
+                                                               :type             "SPELL"
+                                                               :rarity           "common"
+                                                               :class            "mage"
+                                                               :state            "in-hand"
+                                                               :race             nil
+                                                               :playable         true
+                                                               :isTargeting      true
+                                                               :validTargetIds   ["m-i2" "m-i3" "h1" "h2"]}]}
+                                             {:id            "p2"
+                                              :deckSize      0
+                                              :hero          {:id        "h2"
+                                                              :name      "Jaina"
+                                                              :health    30
+                                                              :maxHealth 30
+                                                              :mana      10
+                                                              :maxMana   10
+                                                              :armor     0
+                                                              :heropower {:name             "Fireblast"
+                                                                          :manaCost         2
+                                                                          :originalManaCost 2
+                                                                          :canUse           false
+                                                                          :isTargeting      true
+                                                                          :validTargetIds   []}}
+                                              :activeMinions [
+                                                              {:attack           1
+                                                               :buffDescriptions []
+                                                               :canAttack        false
+                                                               :description      nil
+                                                               :health           1
+                                                               :id               "m-i3"
+                                                               :manaCost         1
+                                                               :maxHealth        1
+                                                               :name             "Imp"
+                                                               :originalAttack   1
+                                                               :originalHealth   1
+                                                               :owner            "p2"
+                                                               :position         0
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :rarity           "common"
+                                                               :states           []
+                                                               :type             "Minion"
+                                                               :validAttackIds   #{}}
+                                                              ]
+                                              :hand          [{:id               "c-i2"
+                                                               :index            0
+                                                               :name             "Imp"
+                                                               :description      ""
+                                                               :health           1
+                                                               :attack           1
+                                                               :manaCost         1
+                                                               :originalManaCost 1
+                                                               :originalHealth   1
+                                                               :originalAttack   1
+                                                               :state            "in-hand"
+                                                               :combo            false
+                                                               :race             "demon"
+                                                               :class            nil
+                                                               :type             "MINION"
+                                                               :rarity           "common"
+                                                               :playable         false
+                                                               :isTargeting      false
+                                                               :validTargetIds   []}]}]}
+  )
