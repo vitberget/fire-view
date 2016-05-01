@@ -55,6 +55,14 @@
     (pprint result)
     result))
 
+(defn undo []
+  (println "undo")
+  (let [post (client/post "http://127.0.0.1:8001/undo")
+        body (:body post)
+        result (json/read-str body :key-fn keyword)]
+    (pprint result)
+    result))
+
 (defn play-card [card-id target-id]
   (println "play-card" card-id target-id)
   (let [data (if (nil? target-id) {:cardId card-id}

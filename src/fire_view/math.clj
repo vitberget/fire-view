@@ -1,6 +1,14 @@
 (ns fire-view.math
   (:use [fire-view.test :only [is=]]))
 
+(defn coord+ [a b]
+  {:x (+ (:x a) (:x b))
+   :y (+ (:y a) (:y b))})
+
+(defn coord- [a b]
+  {:x (- (:x a) (:x b))
+   :y (- (:y a) (:y b))})
+
 (defn sqr [n] (* n n))
 
 (defn sqrt [n] (Math/sqrt n))
@@ -69,21 +77,22 @@ segment-plane-intersection [sp0 sp1 pv0 pn]
           (vec+ sp0 (vec* u si)))))))
 
 (defn- ^{:test (fn []
-                 (is= (segment-plane-intersection [10 0 0] [-10 0 0] [0 2 1] [1 0 0])
-                      [0 0 0])
-                 (is= (segment-plane-intersection [10 0 0] [-10 0 0] [2 2 1] [1 0 0])
-                      [2 0 0])
-                 (is= (segment-plane-intersection [20 20 10] [10 10 -10] [2 2 0] [0 0 1])
-                      [15 15 0])
-                 (is= (segment-plane-intersection [20 20 0] [10 10 0] [2 2 0] [1 0 0])
-                      nil))}
+                 (is= (segment-plane-intersection [10 0 0] [-10 0 0] [0 2 1] [1 0 0]) [0 0 0])
+                 (is= (segment-plane-intersection [10 0 0] [-10 0 0] [2 2 1] [1 0 0]) [2 0 0])
+                 (is= (segment-plane-intersection [20 20 10] [10 10 -10] [2 2 0] [0 0 1]) [15 15 0])
+                 (is= (segment-plane-intersection [20 20 0] [10 10 0] [2 2 0] [1 0 0]) nil))}
 test-tegment-plane-intersection [])
 
-(defn inside-entity? [zx zy x y w h]
-  (and (< zx (+ x w))
-       (> zx (- x w))
-       (< zy (+ y h))
-       (> zy (- y h))))
+(defn inside-entity?
+  ([z p d]
+   (inside-entity? (:x z) (:y z)
+                   (:x p) (:y p)
+                   (:w d) (:h d)))
+  ([zx zy x y w h]
+   (and (< zx (+ x w))
+        (> zx (- x w))
+        (< zy (+ y h))
+        (> zy (- y h)))))
 
 
 

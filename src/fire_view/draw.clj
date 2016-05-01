@@ -5,18 +5,24 @@
        (try ~@body
             (finally (q/end-shape)))))
 
-(def ^:const graphic-constants {:card-width           170
-                                :card-height          256
-                                :card-spacing         20
+(defmacro xy [map]
+  `(flatten (vals ~map)))
 
-                                :hover-factor         1.03
+(def ^:const graphic-constants {:card-dimesions              {:w 170 :h 256}
+                                :card-dimension-with-spacing {:w 190 :h 256}
+                                :card-spacing                20
 
-                                :hand-y               600
-                                :friendly-y           0
-                                :enemy-y              -600
+                                :hover-factor                1.03
 
-                                :end-button-translate {:x 1600 :y 0}
-                                :end-button-size      {:w 100 :h 50}})
+                                :hand-y                      600
+                                :friendly-y                  0
+                                :enemy-y                     -600
+
+                                :end-button-translate        {:x 1600 :y 0}
+                                :undo-button-translate       {:x 1600 :y 125}
+                                :newgame-button-translate    {:x 1600 :y -125}
+
+                                :button-size                 {:w 200 :h 50}})
 
 (def images (atom {}))
 
@@ -30,8 +36,8 @@
   (get-image (str "portrait/" portaitname ".png")))
 
 (defn draw-card [mzpos card pos hand-size]
-  (let [width (:card-width graphic-constants)
-        height (:card-height graphic-constants)
+  (let [width (:w (:card-dimesions graphic-constants))
+        height (:h (:card-dimesions graphic-constants))
         clicked-card-id (:id (:card (:pressed @graphic-state)))
         clicked (= (:id card) clicked-card-id)
         ph (- height 170)
@@ -49,10 +55,8 @@
                         (q/no-fill)
 
                         (when clicked
-                          (let [morgpos (:org-mouse-trans (:pressed @graphic-state))]
-                            (q/translate (- (:x mzpos) (:x morgpos))
-                                         (- (:y mzpos) (:y morgpos))
-                                         10)))
+                          (q/translate (xy (m/coord- mzpos (:org-mouse-trans (:pressed @graphic-state)))))
+                          (q/translate 0 0 10))
                         (when (or clicked (and
                                             (not clicked-card-id)
                                             (inside-card? mzpos pos hand-size)))
@@ -89,8 +93,8 @@
                         (q/text (:name card) 0 0))))
 
 (defn draw-minion [mzpos minion targeted]
-  (let [width (:card-width graphic-constants)
-        height (:card-height graphic-constants)
+  (let [width (:w (:card-dimesions graphic-constants))
+        height (:h (:card-dimesions graphic-constants))
         ph (- height 170)
         pw (- width 65)
         pw2 (- pw 35)
@@ -104,10 +108,9 @@
     (q/no-fill)
 
     (when (= (:id minion) (:id (:minion (:pressed @graphic-state))))
-      (let [morgpos (:org-mouse-trans (:pressed @graphic-state))]
-        (q/translate (- (:x mzpos) (:x morgpos))
-                     (- (:y mzpos) (:y morgpos))
-                     10)))
+      (q/translate (xy (m/coord- mzpos (:org-mouse-trans (:pressed @graphic-state)))))
+      (q/translate 0 0 10))
+
     ; Portrait
     (with-shape []
                 (q/texture (get-portrait (:name minion)))
@@ -151,6 +154,7 @@
 
 (defn mouse-attackable-minion? [mzpos idx minion-count test-function minion]
   (or
+    ; Attackable by spell
     (let [pressed (:card (:pressed @graphic-state))]
       (and
         pressed
@@ -158,6 +162,7 @@
         (= "SPELL" (:type pressed))
         (test/vector-contains? (:validTargetIds pressed) (:id minion))
         (test-function mzpos idx minion-count)))
+    ; Attackable by minion
     (let [pressed (:minion (:pressed @graphic-state))]
       (and
         pressed
@@ -188,8 +193,8 @@
                         (doseq [[minion idx] (map vector minions (iterate inc 0))]
                           (draw-friendly-minion mzpos minion idx minion-count card-pos))
                         (when card-pos
-                          (let [width (:card-width graphic-constants)
-                                height (:card-height graphic-constants)]
+                          (let [width (:w (:card-dimesions graphic-constants))
+                                height (:h (:card-dimesions graphic-constants))]
                             (q/translate (get-entity-translation-x card-pos minion-count-plus) 0)
                             (q/fill 120 255 120 122)
                             (q/rect (- width) (- height) (* 2 width) (* 2 height) 30))))))
@@ -212,39 +217,44 @@
                           (when (= clicked-id (:id card))
                             (draw-card mzpos card idx hand-size))))))
 
-
-(defn draw-endbutton [mzpos]
-  (q/with-translation [(:x (:end-button-translate graphic-constants))
-                       (:y (:end-button-translate graphic-constants))]
-                      (if (inside-endbutton? mzpos)
+(defn draw-button [text button-translation hover]
+  (q/with-translation [(xy button-translation)]
+                      (if hover
                         (q/fill 56 255 56)
                         (q/fill 0 128 0))
-                      (let [w (:w (:end-button-size graphic-constants))
-                            h (:h (:end-button-size graphic-constants))]
+                      (let [w (:w (:button-size graphic-constants))
+                            h (:h (:button-size graphic-constants))]
                         (q/rect (- w) (- h) (* w 2) (* h 2) 30))
                       (q/fill 0 0 0)
                       (q/text-size 70)
                       (q/translate 0 30)
                       (q/text-align :center)
-                      (q/text "End" 0 0)))
+                      (q/text text 0 0)))
+
+(defn draw-end-button [mzpos]
+  (draw-button  "End turn" (:end-button-translate graphic-constants) (inside-end-button? mzpos)))
+
+(defn draw-undo-button [mzpos]
+  (draw-button  "Undo move" (:undo-button-translate graphic-constants) (inside-undo-button? mzpos)))
+
+(defn draw-newgame-button [mzpos]
+  (draw-button  "New game" (:newgame-button-translate graphic-constants) (inside-newgame-button? mzpos)))
 
 (defn draw-board [mzpos]
-  (draw-endbutton mzpos))
+  (draw-end-button mzpos)
+  (draw-undo-button mzpos)
+  (draw-newgame-button mzpos))
 
 (defn draw-scene []
   (camera)
   (q/background 70 128 185)
   (let [mzpos (mouse-to-zplane)
-        tx (:x (:translate-plane @graphic-state))
-        ty (:y (:translate-plane @graphic-state))
-        mzpos-trans {:x (- (:x mzpos) tx)
-                     :y (- (:y mzpos) ty)}
+        mzpos-trans (m/coord- mzpos (:translate-plane @graphic-state))
         player (get-player-map)]
-    (q/translate tx ty)
+    (q/translate (xy (:translate-plane @graphic-state)))
     (when
       (:translating (:pressed @graphic-state))
-      (q/translate (- (:x mzpos) (:x (:org-mouse (:pressed @graphic-state))))
-                   (- (:y mzpos) (:y (:org-mouse (:pressed @graphic-state))))))
+      (q/translate (xy (m/coord- mzpos (:org-mouse (:pressed @graphic-state))))))
     (draw-board mzpos-trans)
     (draw-enemy-minions mzpos-trans (:activeMinions (get-enemy-map)))
     (draw-friendly-minions mzpos-trans (:activeMinions player))
