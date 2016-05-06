@@ -126,9 +126,11 @@
     (q/no-fill)
 
     (when
-      (targetable-minion? minion)
+      (and
+        (not targeted)
+        (targetable-minion? minion))
       (q/with-translation [0 0 -2]
-                          (q/fill 255 57 56)
+                          (q/fill 255 244 56)
                           (let [w2 (+ width 5)
                                 h2 (+ height 5)]
                             (q/rect (- w2) (- h2) (* 2 w2) (* 2 h2) 30))))

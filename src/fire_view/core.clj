@@ -84,7 +84,7 @@
   (m/inside-entity? mzpos
                     {:x (get-entity-translation-x idx minion-count)
                      :y (:friendly-y graphic-constants)}
-                    (:card-dimension-with-spacing graphic-constants)))
+                    (:card-dimesions graphic-constants)))
 
 (defn inside-enemy? [mzpos idx minion-count]
   (m/inside-entity? mzpos {:x (get-entity-translation-x idx minion-count) :y (:enemy-y graphic-constants)} (:card-dimension-with-spacing graphic-constants)))
@@ -173,8 +173,7 @@
 
 (defn setup []
   (q/frame-rate 60)
-  (swap! gamestate (fn [_] (game/create-game)))
-  )
+  (swap! gamestate (fn [_] (game/create-game))))
 
 (load "draw")
 
