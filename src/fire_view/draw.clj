@@ -157,7 +157,6 @@
     ; Attackable by spell
     (let [pressed (:card (:pressed @graphic-state))]
       (and
-        pressed
         (:isTargeting pressed)
         (= "SPELL" (:type pressed))
         (test/vector-contains? (:validTargetIds pressed) (:id minion))
@@ -231,19 +230,11 @@
                       (q/text-align :center)
                       (q/text text 0 0)))
 
-(defn draw-end-button [mzpos]
-  (draw-button  "End turn" (:end-button-translate graphic-constants) (inside-end-button? mzpos)))
-
-(defn draw-undo-button [mzpos]
-  (draw-button  "Undo move" (:undo-button-translate graphic-constants) (inside-undo-button? mzpos)))
-
-(defn draw-newgame-button [mzpos]
-  (draw-button  "New game" (:newgame-button-translate graphic-constants) (inside-newgame-button? mzpos)))
 
 (defn draw-board [mzpos]
-  (draw-end-button mzpos)
-  (draw-undo-button mzpos)
-  (draw-newgame-button mzpos))
+  (draw-button "End turn" (:end-button-translate graphic-constants) (inside-end-button? mzpos))
+  (draw-button "Undo move" (:undo-button-translate graphic-constants) (inside-undo-button? mzpos))
+  (draw-button "New game" (:newgame-button-translate graphic-constants) (inside-newgame-button? mzpos)))
 
 (defn draw-scene []
   (camera)
