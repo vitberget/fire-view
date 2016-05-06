@@ -35,6 +35,24 @@
 (defn get-portrait [portaitname]
   (get-image (str "portrait/" portaitname ".png")))
 
+(defn targetable-minion? [minion]
+  (or
+    (let [pressed (:card (:pressed @graphic-state))]
+      (and
+        (:isTargeting pressed)
+        (= "SPELL" (:type pressed))
+        (test/vector-contains? (:validTargetIds pressed) (:id minion))))
+    ; Attackable by minion
+    (let [pressed (:minion (:pressed @graphic-state))]
+      (and
+        pressed
+        (test/vector-contains? (:validAttackIds pressed) (:id minion))))))
+
+(defn targetted-minion? [mzpos idx minion-count test-function minion]
+  (and
+    (targetable-minion? minion)
+    (test-function mzpos idx minion-count)))
+
 (defn draw-card [mzpos card pos hand-size]
   (let [width (:w (:card-dimesions graphic-constants))
         height (:h (:card-dimesions graphic-constants))
@@ -107,6 +125,14 @@
     (q/no-stroke)
     (q/no-fill)
 
+    (when
+      (targetable-minion? minion)
+      (q/with-translation [0 0 -2]
+                          (q/fill 255 57 56)
+                          (let [w2 (+ width 5)
+                                h2 (+ height 5)]
+                            (q/rect (- w2) (- h2) (* 2 w2) (* 2 h2) 30))))
+
     (when (= (:id minion) (:id (:minion (:pressed @graphic-state))))
       (q/translate (xy (m/coord- mzpos (:org-mouse-trans (:pressed @graphic-state)))))
       (q/translate 0 0 10))
@@ -152,34 +178,18 @@
         (q/rect (- w2) (- h2) (* 2 w2) (* 2 h2) 30)))
     ))
 
-(defn mouse-attackable-minion? [mzpos idx minion-count test-function minion]
-  (or
-    ; Attackable by spell
-    (let [pressed (:card (:pressed @graphic-state))]
-      (and
-        (:isTargeting pressed)
-        (= "SPELL" (:type pressed))
-        (test/vector-contains? (:validTargetIds pressed) (:id minion))
-        (test-function mzpos idx minion-count)))
-    ; Attackable by minion
-    (let [pressed (:minion (:pressed @graphic-state))]
-      (and
-        pressed
-        (test/vector-contains? (:validAttackIds pressed) (:id minion))
-        (test-function mzpos idx minion-count)))))
-
 (defn draw-friendly-minion [mzpos minion idx minion-count card-drop-pos]
   (let [translation (cond (nil? card-drop-pos) [(get-entity-translation-x idx minion-count) 0]
                           (>= idx card-drop-pos) [(get-entity-translation-x (inc idx) (inc minion-count)) 0]
                           :else [(get-entity-translation-x idx (inc minion-count)) 0])]
     (q/with-translation translation
-                        (draw-minion mzpos minion (mouse-attackable-minion? mzpos idx minion-count inside-friendly? minion)))))
+                        (draw-minion mzpos minion (targetted-minion? mzpos idx minion-count inside-friendly? minion)))))
 
 
 
 (defn draw-enemy-minion [mzpos minion idx minion-count]
   (q/with-translation [(get-entity-translation-x idx minion-count) 0]
-                      (draw-minion mzpos minion (mouse-attackable-minion? mzpos idx minion-count inside-enemy? minion))))
+                      (draw-minion mzpos minion (targetted-minion? mzpos idx minion-count inside-enemy? minion))))
 
 (defn draw-friendly-minions [mzpos minions]
   (q/with-translation [0 (:friendly-y graphic-constants)]
