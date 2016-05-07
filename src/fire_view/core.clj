@@ -10,7 +10,7 @@
 (def gamestate (atom game/example-gamestate))
 
 (def graphic-state (atom {:translate-plane {:x 0 :y 0}
-                          :eye             {:x 0 :y 0 :z 1850}
+                          :eye             {:x 0 :y 0 :z 2280}
                           :fov             (/ m/pi 3)
                           :pressed         nil}))
 

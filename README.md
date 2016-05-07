@@ -3,6 +3,8 @@ Client to firestone-clojure (dd2386client api) - https://github.com/tomas81508/f
 
 Alternative web client - https://github.com/wnr/firestone-view
 
+Copy the asset/image folder from firestone-view to fire-view resource folder.
+
 Future:
     Own style graphics
     Fully playable

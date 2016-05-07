@@ -22,18 +22,31 @@
                                 :undo-button-translate       {:x 1600 :y 125}
                                 :newgame-button-translate    {:x 1600 :y -125}
 
-                                :button-size                 {:w 200 :h 50}})
+                                :button-size                 {:w 200 :h 50}
+
+                                :friendly-hero-translate     {:x 0 :y 1100}
+                                :enemy-hero-translate        {:x 0 :y -1100}
+                                :hero-size                   180
+                                :hero-power-size             120
+                                :hero-power-translate        {:x 400 :y 0}
+                                })
 
 (def images (atom {}))
 
 (defn get-image [imagepath]
   (let [img (get @images imagepath)]
-    (if img img (let [img (q/load-image (clojure.string/replace imagepath #"\s|," ""))]
+    (if img img (let [img (q/load-image imagepath)]         ;(clojure.string/replace imagepath #"\s|," ""))]
                   (swap! images assoc imagepath img)
                   img))))
 
-(defn get-portrait [portaitname]
-  (get-image (str "portrait/" portaitname ".png")))
+(defn get-minion-portrait [portaitname]
+  (get-image (str "image/card/portrait/" (clojure.string/replace portaitname #"\s|," "") ".png")))
+
+(defn get-hero-portrait [portaitname]
+  (get-image (str "image/hero/" portaitname ".png")))
+
+(defn get-heropower-portrait [portaitname]
+  (get-image (str "image/heropower/" portaitname ".png")))
 
 (defn targetable-minion? [minion]
   (or
@@ -82,7 +95,7 @@
 
                         ; Portrait
                         (with-shape []
-                                    (q/texture (get-portrait (:name card)))
+                                    (q/texture (get-minion-portrait (:name card)))
                                     (q/vertex (- pw) pt2 87 pto3)
                                     (q/vertex (- pw2) pt2 (+ 87 pto1) pto3)
                                     (q/vertex (- pw3) pt (+ 87 pto2) 0)
@@ -95,7 +108,7 @@
 
                         ;Frame
                         (with-shape []
-                                    (q/texture (get-image "card/frame.png")) ; TODO freames
+                                    (q/texture (get-image "image/card/Card_Frame.png")) ; TODO freames
                                     (q/vertex (- width) (- height) 87 3)
                                     (q/vertex width (- height) 423 3)
                                     (q/vertex width height 423 510)
@@ -141,7 +154,7 @@
 
     ; Portrait
     (with-shape []
-                (q/texture (get-portrait (:name minion)))
+                (q/texture (get-minion-portrait (:name minion)))
                 (q/vertex (- pw) pt2 87 pto3)
                 (q/vertex (- pw2) pt2 (+ 87 pto1) pto3)
                 (q/vertex (- pw3) pt (+ 87 pto2) 0)
@@ -154,7 +167,7 @@
 
     ; Frame
     (with-shape []
-                (q/texture (get-image "card/frame.png"))    ; TODO minion-lookie-lookie
+                (q/texture (get-image "image/card/Card_Frame.png")) ; TODO freames
                 (q/vertex (- width) (- height) 87 3)
                 (q/vertex width (- height) 423 3)
                 (q/vertex width height 423 510)
@@ -248,17 +261,49 @@
   (draw-button "Undo move" (:undo-button-translate graphic-constants) (inside-undo-button? mzpos))
   (draw-button "New game" (:newgame-button-translate graphic-constants) (inside-newgame-button? mzpos)))
 
+(defn draw-hero [hero]
+  (with-shape []
+              (let [size+ (:hero-size graphic-constants)
+                    size- (- size+)]
+                (q/texture (get-hero-portrait (:name hero)))
+                (q/vertex size- size- 0 0)
+                (q/vertex size+ size- 512 0)
+                (q/vertex size+ size+ 512 512)
+                (q/vertex size- size+ 0 512)
+                (q/vertex size- size- 0 0)))
+  (q/translate (xy (:hero-power-translate graphic-constants)))
+  (let [size+ (:hero-power-size graphic-constants)
+        size- (- size+)]
+    (with-shape []
+                (q/texture (get-heropower-portrait (:name (:heropower hero))))
+                (q/vertex size- size- 0 0)
+                (q/vertex size+ size- 512 0)
+                (q/vertex size+ size+ 512 512)
+                (q/vertex size- size+ 0 512)
+                (q/vertex size- size- 0 0))))
+
+(defn draw-friendly-hero [mzpos hero]
+  (q/with-translation (xy (:friendly-hero-translate graphic-constants))
+                      (draw-hero hero)))
+
+(defn draw-enemy-hero [mzpos hero]
+  (q/with-translation (xy (:enemy-hero-translate graphic-constants))
+                      (draw-hero hero)))
+
 (defn draw-scene []
   (camera)
   (q/background 70 128 185)
   (let [mzpos (mouse-to-zplane)
         mzpos-trans (m/coord- mzpos (:translate-plane @graphic-state))
-        player (get-player-map)]
+        player (get-player-map)
+        enemy (get-enemy-map)]
     (q/translate (xy (:translate-plane @graphic-state)))
     (when
       (:translating (:pressed @graphic-state))
       (q/translate (xy (m/coord- mzpos (:org-mouse (:pressed @graphic-state))))))
     (draw-board mzpos-trans)
-    (draw-enemy-minions mzpos-trans (:activeMinions (get-enemy-map)))
+    (draw-enemy-minions mzpos-trans (:activeMinions enemy))
     (draw-friendly-minions mzpos-trans (:activeMinions player))
-    (draw-hand mzpos-trans (:hand player))))
+    (draw-hand mzpos-trans (:hand player))
+    (draw-friendly-hero mzpos-trans (:hero player))
+    (draw-enemy-hero mzpos-trans (:hero enemy))))
