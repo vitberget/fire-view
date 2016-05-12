@@ -12,17 +12,26 @@
 (def graphic-state (atom {:translate-plane {:x 0 :y 0}
                           :eye             {:x 0 :y 0 :z 2280}
                           :fov             (/ m/pi 3)
-                          :pressed         nil}))
+                          :pressed         nil
+                          :rotations       {}}))
+
+(defn get-rotation [id]
+  (let [rotation (get (:rotations @graphic-state) id)]
+    (if rotation
+      rotation
+      (let [rotation (- (rand 0.1) 0.05)]
+        (swap! graphic-state assoc-in [:rotations id] rotation)
+        rotation))))
 
 (defn get-player-map []
-  (->> (:players @gamestate)
-       (filter (fn [player] (= (:id player) (:playerInTurn @gamestate))))
-       (first)))
+  (first
+    (->> (:players @gamestate)
+         (filter (fn [player] (= (:id player) (:playerInTurn @gamestate)))))))
 
 (defn get-enemy-map []
-  (->> (:players @gamestate)
-       (filter (fn [player] (not= (:id player) (:playerInTurn @gamestate))))
-       (first)))
+  (first
+    (->> (:players @gamestate)
+         (filter (fn [player] (not= (:id player) (:playerInTurn @gamestate)))))))
 
 (defn
   ^{:doc "Only works correctly when flat"}
@@ -92,10 +101,9 @@
 (defn get-minion-target [mzpos playermap testfunction]
   (let [minions (:activeMinions playermap)
         minioncount (count minions)]
-    (->> (map vector minions (iterate inc 0))
-         (filter (fn [item] (testfunction mzpos (last item) minioncount)))
-         (first)
-         (first))))
+    (first (first
+             (->> (map vector minions (iterate inc 0))
+                  (filter (fn [item] (testfunction mzpos (last item) minioncount))))))))
 
 (defn mouse-released []
   (let [mzpos (mouse-to-zplane-notrans)
@@ -130,7 +138,7 @@
                      (get-minion-target mzpos-trans (get-enemy-map) inside-enemy?))]
         (if-not (or (nil? target) (= (:id minion) (:id target)))
           (swap! gamestate (fn [_] (game/attack (:id minion) (:id target)))))))
-    (swap! graphic-state assoc :pressed nil)))
+    (swap! graphic-state dissoc :pressed)))
 
 (defn mouse-pressed []
   (let [mzpos (mouse-to-zplane-notrans)

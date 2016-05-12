@@ -81,7 +81,6 @@
         pto2 105
         pto3 45]
     (q/with-translation [(get-entity-translation-x pos hand-size) 0]
-
                         (q/no-stroke)
                         (q/no-fill)
 
@@ -92,6 +91,8 @@
                                             (not clicked-card-id)
                                             (inside-card? mzpos pos hand-size)))
                           (q/scale (:hover-factor graphic-constants)))
+
+                        (q/rotate-z (get-rotation (:id card)))
 
                         ; Portrait
                         (with-shape []
@@ -152,6 +153,8 @@
       (q/translate (xy (m/coord- mzpos (:org-mouse-trans (:pressed @graphic-state)))))
       (q/translate 0 0 10))
 
+    (q/rotate-z (get-rotation (:id minion)))
+
     ; Portrait
     (with-shape []
                 (q/texture (get-minion-portrait (:name minion)))
@@ -210,16 +213,17 @@
   (q/with-translation [0 (:friendly-y graphic-constants)]
                       (let [minion-count (count minions)
                             minion-count-plus (inc minion-count)
-                            card-pos (when (= "MINION" (:type (:card (:pressed @graphic-state))))
-                                       (->> (range minion-count-plus)
-                                            (filter (fn [pos] (inside-friendly? mzpos pos minion-count-plus)))
-                                            (first)))]
+                            pressed-card (:card (:pressed @graphic-state))
+                            card-pos (when (= "MINION" (:type pressed-card))
+                                       (first (->> (range minion-count-plus)
+                                                   (filter (fn [pos] (inside-friendly? mzpos pos minion-count-plus))))))]
                         (doseq [[minion idx] (map vector minions (iterate inc 0))]
                           (draw-friendly-minion mzpos minion idx minion-count card-pos))
                         (when card-pos
                           (let [width (:w (:card-dimesions graphic-constants))
                                 height (:h (:card-dimesions graphic-constants))]
                             (q/translate (get-entity-translation-x card-pos minion-count-plus) 0)
+                            (q/rotate-z (get-rotation (:id pressed-card)))
                             (q/fill 120 255 120 122)
                             (q/rect (- width) (- height) (* 2 width) (* 2 height) 30))))))
 
@@ -265,12 +269,16 @@
   (with-shape []
               (let [size+ (:hero-size graphic-constants)
                     size- (- size+)]
+                (q/push-matrix)
+                (q/rotate-z (get-rotation (:id hero)))
                 (q/texture (get-hero-portrait (:name hero)))
                 (q/vertex size- size- 0 0)
                 (q/vertex size+ size- 512 0)
                 (q/vertex size+ size+ 512 512)
                 (q/vertex size- size+ 0 512)
-                (q/vertex size- size- 0 0)))
+                (q/vertex size- size- 0 0)
+                (q/pop-matrix)))
+
   (q/translate (xy (:hero-power-translate graphic-constants)))
   (let [size+ (:hero-power-size graphic-constants)
         size- (- size+)]

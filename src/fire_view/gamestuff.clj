@@ -144,7 +144,7 @@
                                                                :canAttack        true
                                                                :description      nil
                                                                :health           1
-                                                               :id               "m-i2"
+                                                               :id               "m-i21"
                                                                :manaCost         1
                                                                :maxHealth        1
                                                                :name             "Imp"
@@ -163,7 +163,7 @@
                                                                :canAttack        true
                                                                :description      nil
                                                                :health           1
-                                                               :id               "m-i2"
+                                                               :id               "m-i22"
                                                                :manaCost         1
                                                                :maxHealth        1
                                                                :name             "Imp"
@@ -182,7 +182,7 @@
                                                                :canAttack        true
                                                                :description      nil
                                                                :health           1
-                                                               :id               "m-i2"
+                                                               :id               "m-i23"
                                                                :manaCost         1
                                                                :maxHealth        1
                                                                :name             "Imp"
@@ -201,7 +201,7 @@
                                                                :canAttack        true
                                                                :description      nil
                                                                :health           1
-                                                               :id               "m-i2"
+                                                               :id               "m-i24"
                                                                :manaCost         1
                                                                :maxHealth        1
                                                                :name             "Imp"
@@ -220,7 +220,7 @@
                                                                :canAttack        true
                                                                :description      nil
                                                                :health           1
-                                                               :id               "m-i2"
+                                                               :id               "m-i25"
                                                                :manaCost         1
                                                                :maxHealth        1
                                                                :name             "Imp"
@@ -239,7 +239,7 @@
                                                                :canAttack        true
                                                                :description      nil
                                                                :health           1
-                                                               :id               "m-i2"
+                                                               :id               "m-i26"
                                                                :manaCost         1
                                                                :maxHealth        1
                                                                :name             "Imp"
