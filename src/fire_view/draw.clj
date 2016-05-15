@@ -40,10 +40,13 @@
                   img))))
 
 (defn get-minion-portrait [portaitname]
-  (get-image (str "image/card/portrait/" (clojure.string/replace portaitname #"\s|," "") ".png")))
+  (get-image (str "image/card/minion/"  portaitname ".png")))
 
 (defn get-hero-portrait [portaitname]
   (get-image (str "image/hero/" portaitname ".png")))
+
+(defn get-spell-portrait [portaitname]
+  (get-image (str "image/card/spell/" portaitname ".png")))
 
 (defn get-heropower-portrait [portaitname]
   (get-image (str "image/heropower/" portaitname ".png")))
@@ -96,7 +99,9 @@
 
                         ; Portrait
                         (with-shape []
-                                    (q/texture (get-minion-portrait (:name card)))
+                                    (cond
+                                      (= (:type card) "SPELL") (q/texture (get-spell-portrait (:name card)))
+                                      (= (:type card) "MINION") (q/texture (get-minion-portrait (:name card))))
                                     (q/vertex (- pw) pt2 87 pto3)
                                     (q/vertex (- pw2) pt2 (+ 87 pto1) pto3)
                                     (q/vertex (- pw3) pt (+ 87 pto2) 0)
